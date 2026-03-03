@@ -36,11 +36,16 @@ input, select {
 button {
     width: 100%;
     padding: 12px;
+    margin-top: 8px;
     background-color: #007BFF;
     color: white;
     border: none;
     border-radius: 8px;
     font-size: 16px;
+}
+
+.clear-btn {
+    background-color: #dc3545;
 }
 
 canvas {
@@ -51,6 +56,7 @@ canvas {
     height: 200px;
     touch-action: none;
     display: block;
+    margin-bottom: 10px;
 }
 
 .small {
@@ -66,10 +72,25 @@ canvas {
 
 <div class="card">
 
-<p><b>Operador:</b> Juan Diego (Demo)</p>
 <p><b>Campaña:</b> Ayacucho 2026</p>
+<p><b>Región:</b> Ayacucho</p>
 
-<label>Nombre Completo</label>
+<label>Distrito</label>
+<select id="distrito">
+    <option value="">Seleccione</option>
+    <option>Huamanga</option>
+    <option>San Juan Bautista</option>
+    <option>Carmen Alto</option>
+    <option>Jesús Nazareno</option>
+</select>
+
+<label>Nombre del Promotor</label>
+<input type="text" id="promotor">
+
+<label>Fecha de Entrega</label>
+<input type="datetime-local" id="fecha">
+
+<label>Nombre Completo Beneficiario</label>
 <input type="text" id="nombre">
 
 <label>DNI</label>
@@ -86,77 +107,117 @@ canvas {
 </select>
 
 <label>Medida de Lente</label>
-<input type="text" id="medida">
+<select id="medida">
+    <option value="">Seleccione</option>
+    <option>1.00</option>
+    <option>1.50</option>
+    <option>2.00</option>
+    <option>2.50</option>
+    <option>3.00</option>
+</select>
 
 <label>Huella del Beneficiario</label>
-<canvas id="canvas"></canvas>
+<canvas id="canvasHuella"></canvas>
+<button class="clear-btn" onclick="limpiarCanvas('canvasHuella')">Limpiar Huella</button>
 
-<p class="small">El beneficiario debe dibujar su huella con el dedo.</p>
+<p class="small">El beneficiario debe colocar su dedo y marcar la huella.</p>
+
+<label>Firma del Beneficiario (si puede firmar)</label>
+<canvas id="canvasFirma"></canvas>
+<button class="clear-btn" onclick="limpiarCanvas('canvasFirma')">Limpiar Firma</button>
 
 <button onclick="guardar()">Guardar Registro</button>
 
 </div>
 
 <script>
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
 
-// Ajustar tamaño correctamente en iPhone
-function resizeCanvas() {
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-    ctx.lineWidth = 6;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "#000";
-}
+// Fecha automática actual
+document.getElementById("fecha").value = new Date().toISOString().slice(0,16);
 
-resizeCanvas();
-window.addEventListener("resize", resizeCanvas);
+function configurarCanvas(id) {
+    const canvas = document.getElementById(id);
+    const ctx = canvas.getContext("2d");
 
-let drawing = false;
-
-canvas.addEventListener("touchstart", function(e) {
-    e.preventDefault();
-    drawing = true;
-    const rect = canvas.getBoundingClientRect();
-    const touch = e.touches[0];
-    ctx.beginPath();
-    ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
-});
-
-canvas.addEventListener("touchmove", function(e) {
-    if (!drawing) return;
-    e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    const touch = e.touches[0];
-    ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
-    ctx.stroke();
-});
-
-canvas.addEventListener("touchend", function(e) {
-    drawing = false;
-});
-
-function guardar() {
-    const nombre = document.getElementById("nombre").value;
-    const dni = document.getElementById("dni").value;
-
-    if (!nombre || !dni) {
-        alert("Complete los campos obligatorios.");
-        return;
+    function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        ctx.lineWidth = 6;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#000";
     }
 
-    const fecha = new Date().toLocaleString();
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+
+    let drawing = false;
+
+    canvas.addEventListener("touchstart", function(e) {
+        e.preventDefault();
+        drawing = true;
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        ctx.beginPath();
+        ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+    });
+
+    canvas.addEventListener("touchmove", function(e) {
+        if (!drawing) return;
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+        ctx.stroke();
+    });
+
+    canvas.addEventListener("touchend", function() {
+        drawing = false;
+    });
+
+    return canvas;
+}
+
+const canvasHuella = configurarCanvas("canvasHuella");
+const canvasFirma = configurarCanvas("canvasFirma");
+
+function limpiarCanvas(id) {
+    const canvas = document.getElementById(id);
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function guardar() {
+
+    const nombre = document.getElementById("nombre").value;
+    const dni = document.getElementById("dni").value;
+    const promotor = document.getElementById("promotor").value;
+    const distrito = document.getElementById("distrito").value;
+    const fecha = document.getElementById("fecha").value;
+    const edad = document.getElementById("edad").value;
+    const sexo = document.getElementById("sexo").value;
+    const medida = document.getElementById("medida").value;
+
+    if (!nombre || !dni || !promotor || !distrito || !medida) {
+        alert("Complete todos los campos obligatorios.");
+        return;
+    }
 
     navigator.geolocation.getCurrentPosition(function(pos) {
 
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
 
-        const csv = `Nombre,${nombre}
+        const csv = `Campaña,Ayacucho 2026
+Región,Ayacucho
+Distrito,${distrito}
+Promotor,${promotor}
+Fecha Entrega,${fecha}
+Nombre,${nombre}
 DNI,${dni}
-Fecha,${fecha}
+Edad,${edad}
+Sexo,${sexo}
+Medida Lente,${medida}
 Latitud,${lat}
 Longitud,${lon}`;
 
@@ -166,10 +227,15 @@ Longitud,${lon}`;
         link.download = "registro_" + dni + ".csv";
         link.click();
 
-        const imageLink = document.createElement("a");
-        imageLink.download = "huella_" + dni + ".png";
-        imageLink.href = canvas.toDataURL("image/png");
-        imageLink.click();
+        const huellaLink = document.createElement("a");
+        huellaLink.download = "huella_" + dni + ".png";
+        huellaLink.href = canvasHuella.toDataURL("image/png");
+        huellaLink.click();
+
+        const firmaLink = document.createElement("a");
+        firmaLink.download = "firma_" + dni + ".png";
+        firmaLink.href = canvasFirma.toDataURL("image/png");
+        firmaLink.click();
 
         alert("Registro guardado correctamente.");
 
@@ -177,6 +243,7 @@ Longitud,${lon}`;
         alert("No se pudo obtener GPS.");
     });
 }
+
 </script>
 
 </body>
