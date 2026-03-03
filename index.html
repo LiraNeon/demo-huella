@@ -76,7 +76,7 @@ canvas {
 <p><b>Región:</b> Ayacucho</p>
 
 <label>Distrito</label>
-<select id="distrito">
+<select id="distrito" required>
     <option value="">Seleccione</option>
     <option>Huamanga</option>
     <option>San Juan Bautista</option>
@@ -85,19 +85,25 @@ canvas {
 </select>
 
 <label>Nombre del Promotor</label>
-<input type="text" id="promotor">
+<input type="text" id="promotor" required>
 
 <label>Fecha de Entrega</label>
-<input type="datetime-local" id="fecha">
+<input type="date" id="fecha" required>
 
 <label>Nombre Completo Beneficiario</label>
-<input type="text" id="nombre">
+<input type="text" id="nombre" required>
 
 <label>DNI</label>
-<input type="text" id="dni">
+<input type="text"
+       id="dni"
+       inputmode="numeric"
+       pattern="[0-9]{8}"
+       maxlength="8"
+       placeholder="Ej: 01234567"
+       required>
 
 <label>Edad</label>
-<input type="number" id="edad">
+<input type="number" id="edad" min="0" max="120">
 
 <label>Sexo</label>
 <select id="sexo">
@@ -107,7 +113,7 @@ canvas {
 </select>
 
 <label>Medida de Lente</label>
-<select id="medida">
+<select id="medida" required>
     <option value="">Seleccione</option>
     <option>1.00</option>
     <option>1.50</option>
@@ -118,13 +124,11 @@ canvas {
 
 <label>Huella del Beneficiario</label>
 <canvas id="canvasHuella"></canvas>
-<button class="clear-btn" onclick="limpiarCanvas('canvasHuella')">Limpiar Huella</button>
-
-<p class="small">El beneficiario debe colocar su dedo y marcar la huella.</p>
+<button type="button" class="clear-btn" onclick="limpiarCanvas('canvasHuella')">Limpiar Huella</button>
 
 <label>Firma del Beneficiario (si puede firmar)</label>
 <canvas id="canvasFirma"></canvas>
-<button class="clear-btn" onclick="limpiarCanvas('canvasFirma')">Limpiar Firma</button>
+<button type="button" class="clear-btn" onclick="limpiarCanvas('canvasFirma')">Limpiar Firma</button>
 
 <button onclick="guardar()">Guardar Registro</button>
 
@@ -132,8 +136,13 @@ canvas {
 
 <script>
 
-// Fecha automática actual
-document.getElementById("fecha").value = new Date().toISOString().slice(0,16);
+// Fecha automática (solo fecha)
+document.getElementById("fecha").value = new Date().toISOString().split("T")[0];
+
+// SOLO permitir números en DNI mientras escribe
+document.getElementById("dni").addEventListener("input", function() {
+    this.value = this.value.replace(/[^0-9]/g, "");
+});
 
 function configurarCanvas(id) {
     const canvas = document.getElementById(id);
@@ -187,18 +196,27 @@ function limpiarCanvas(id) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
+function validarDNI(dni) {
+    return /^[0-9]{8}$/.test(dni);
+}
+
 function guardar() {
 
-    const nombre = document.getElementById("nombre").value;
-    const dni = document.getElementById("dni").value;
-    const promotor = document.getElementById("promotor").value;
+    const nombre = document.getElementById("nombre").value.trim();
+    const dni = document.getElementById("dni").value.trim();
+    const promotor = document.getElementById("promotor").value.trim();
     const distrito = document.getElementById("distrito").value;
     const fecha = document.getElementById("fecha").value;
     const edad = document.getElementById("edad").value;
     const sexo = document.getElementById("sexo").value;
     const medida = document.getElementById("medida").value;
 
-    if (!nombre || !dni || !promotor || !distrito || !medida) {
+    if (!validarDNI(dni)) {
+        alert("El DNI debe tener exactamente 8 dígitos numéricos.");
+        return;
+    }
+
+    if (!nombre || !promotor || !distrito || !medida || !fecha) {
         alert("Complete todos los campos obligatorios.");
         return;
     }
