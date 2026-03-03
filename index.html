@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro Campaña Lentes</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 15px;
+    background-color: #f2f2f2;
+}
+
+h2 {
+    text-align: center;
+}
+
+.card {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0px 3px 10px rgba(0,0,0,0.1);
+}
+
+input, select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    margin-bottom: 12px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+canvas {
+    border: 2px solid #333;
+    border-radius: 8px;
+    background: #fff;
+    width: 100%;
+    height: 200px;
+    touch-action: none;
+}
+
+.small {
+    font-size: 12px;
+    color: gray;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Registro de Entrega de Lentes</h2>
+
+<div class="card">
+
+<p><b>Operador:</b> Juan Diego (Demo)</p>
+<p><b>Campaña:</b> Ayacucho 2026</p>
+
+<label>Nombre Completo</label>
+<input type="text" id="nombre">
+
+<label>DNI</label>
+<input type="text" id="dni">
+
+<label>Edad</label>
+<input type="number" id="edad">
+
+<label>Sexo</label>
+<select id="sexo">
+    <option value="">Seleccione</option>
+    <option>Masculino</option>
+    <option>Femenino</option>
+</select>
+
+<label>Medida de Lente</label>
+<input type="text" id="medida">
+
+<label>Huella del Beneficiario</label>
+<canvas id="canvas"></canvas>
+
+<p class="small">El beneficiario debe dibujar su huella con el dedo.</p>
+
+<button onclick="guardar()">Guardar Registro</button>
+
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = canvas.offsetWidth;
+canvas.height = 200;
+
+let dibujando = false;
+
+function getTouchPos(canvas, touchEvent) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: touchEvent.touches[0].clientX - rect.left,
+        y: touchEvent.touches[0].clientY - rect.top
+    };
+}
+
+canvas.addEventListener("touchstart", function(e) {
+    dibujando = true;
+    const pos = getTouchPos(canvas, e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+});
+
+canvas.addEventListener("touchmove", function(e) {
+    if (!dibujando) return;
+    e.preventDefault();
+    const pos = getTouchPos(canvas, e);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+});
+
+canvas.addEventListener("touchend", function() {
+    dibujando = false;
+});
+
+function guardar() {
+    const nombre = document.getElementById("nombre").value;
+    const dni = document.getElementById("dni").value;
+    const edad = document.getElementById("edad").value;
+    const sexo = document.getElementById("sexo").value;
+    const medida = document.getElementById("medida").value;
+
+    if (!nombre || !dni) {
+        alert("Complete los campos obligatorios.");
+        return;
+    }
+
+    const fecha = new Date();
+    const timestamp = fecha.toLocaleString();
+
+    navigator.geolocation.getCurrentPosition(function(pos) {
+
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+
+        const data = [
+            ["Nombre", nombre],
+            ["DNI", dni],
+            ["Edad", edad],
+            ["Sexo", sexo],
+            ["Medida", medida],
+            ["Operador", "Juan Diego"],
+            ["Fecha", timestamp],
+            ["Latitud", lat],
+            ["Longitud", lon]
+        ];
+
+        let csvContent = "data:text/csv;charset=utf-8,";
+        data.forEach(row => {
+            csvContent += row.join(",") + "\n";
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "registro_" + dni + ".csv");
+        document.body.appendChild(link);
+        link.click();
+
+        const imageLink = document.createElement("a");
+        imageLink.download = "huella_" + dni + ".png";
+        imageLink.href = canvas.toDataURL();
+        imageLink.click();
+
+        alert("Registro guardado correctamente.");
+
+    }, function() {
+        alert("No se pudo obtener GPS.");
+    });
+}
+</script>
+
+</body>
+</html>
