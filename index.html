@@ -50,6 +50,7 @@ canvas {
     width: 100%;
     height: 200px;
     touch-action: none;
+    display: block;
 }
 
 .small {
@@ -100,47 +101,41 @@ canvas {
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-// Ajustar tamaño real del canvas correctamente
-function ajustarCanvas() {
+// Ajustar tamaño correctamente en iPhone
+function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width;
-    canvas.height = 200;
+    canvas.height = rect.height;
     ctx.lineWidth = 6;
     ctx.lineCap = "round";
-    ctx.strokeStyle = "#111";
+    ctx.strokeStyle = "#000";
 }
 
-ajustarCanvas();
-window.addEventListener("resize", ajustarCanvas);
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
 
-let dibujando = false;
-
-function getPosicion(e) {
-    const rect = canvas.getBoundingClientRect();
-    return {
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top
-    };
-}
+let drawing = false;
 
 canvas.addEventListener("touchstart", function(e) {
     e.preventDefault();
-    dibujando = true;
-    const pos = getPosicion(e);
+    drawing = true;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
     ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
+    ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
 });
 
 canvas.addEventListener("touchmove", function(e) {
-    if (!dibujando) return;
+    if (!drawing) return;
     e.preventDefault();
-    const pos = getPosicion(e);
-    ctx.lineTo(pos.x, pos.y);
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
     ctx.stroke();
 });
 
 canvas.addEventListener("touchend", function(e) {
-    dibujando = false;
+    drawing = false;
 });
 
 function guardar() {
@@ -183,6 +178,6 @@ Longitud,${lon}`;
     });
 }
 </script>
+
 </body>
 </html>
-
