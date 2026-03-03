@@ -99,26 +99,34 @@ canvas {
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-// Fondo tipo huella sutil
-ctx.fillStyle = "#f0f0f0";
-ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-canvas.width = canvas.offsetWidth;
-canvas.height = 200;
+// Ajustar tamaño real del canvas correctamente
+function ajustarCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = 200;
+    ctx.lineWidth = 6;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#111";
+}
+
+ajustarCanvas();
+window.addEventListener("resize", ajustarCanvas);
 
 let dibujando = false;
 
-function getTouchPos(canvas, touchEvent) {
+function getPosicion(e) {
     const rect = canvas.getBoundingClientRect();
     return {
-        x: touchEvent.touches[0].clientX - rect.left,
-        y: touchEvent.touches[0].clientY - rect.top
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top
     };
 }
 
 canvas.addEventListener("touchstart", function(e) {
+    e.preventDefault();
     dibujando = true;
-    const pos = getTouchPos(canvas, e);
+    const pos = getPosicion(e);
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
 });
@@ -126,65 +134,46 @@ canvas.addEventListener("touchstart", function(e) {
 canvas.addEventListener("touchmove", function(e) {
     if (!dibujando) return;
     e.preventDefault();
-    const pos = getTouchPos(canvas, e);
-    ctx.lineWidth = 5;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "#111";
+    const pos = getPosicion(e);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
 });
 
-canvas.addEventListener("touchend", function() {
+canvas.addEventListener("touchend", function(e) {
     dibujando = false;
 });
 
 function guardar() {
     const nombre = document.getElementById("nombre").value;
     const dni = document.getElementById("dni").value;
-    const edad = document.getElementById("edad").value;
-    const sexo = document.getElementById("sexo").value;
-    const medida = document.getElementById("medida").value;
 
     if (!nombre || !dni) {
         alert("Complete los campos obligatorios.");
         return;
     }
 
-    const fecha = new Date();
-    const timestamp = fecha.toLocaleString();
+    const fecha = new Date().toLocaleString();
 
     navigator.geolocation.getCurrentPosition(function(pos) {
 
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
 
-        const data = [
-            ["Nombre", nombre],
-            ["DNI", dni],
-            ["Edad", edad],
-            ["Sexo", sexo],
-            ["Medida", medida],
-            ["Operador", "Juan Diego"],
-            ["Fecha", timestamp],
-            ["Latitud", lat],
-            ["Longitud", lon]
-        ];
+        const csv = `Nombre,${nombre}
+DNI,${dni}
+Fecha,${fecha}
+Latitud,${lat}
+Longitud,${lon}`;
 
-        let csvContent = "data:text/csv;charset=utf-8,";
-        data.forEach(row => {
-            csvContent += row.join(",") + "\n";
-        });
-
-        const encodedUri = encodeURI(csvContent);
+        const blob = new Blob([csv], { type: "text/csv" });
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "registro_" + dni + ".csv");
-        document.body.appendChild(link);
+        link.href = URL.createObjectURL(blob);
+        link.download = "registro_" + dni + ".csv";
         link.click();
 
         const imageLink = document.createElement("a");
         imageLink.download = "huella_" + dni + ".png";
-        imageLink.href = canvas.toDataURL();
+        imageLink.href = canvas.toDataURL("image/png");
         imageLink.click();
 
         alert("Registro guardado correctamente.");
@@ -194,6 +183,6 @@ function guardar() {
     });
 }
 </script>
-
 </body>
 </html>
+
