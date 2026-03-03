@@ -99,6 +99,9 @@ canvas {
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+// Fondo tipo huella sutil
+ctx.fillStyle = "#f0f0f0";
+ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 canvas.width = canvas.offsetWidth;
 canvas.height = 200;
@@ -124,6 +127,9 @@ canvas.addEventListener("touchmove", function(e) {
     if (!dibujando) return;
     e.preventDefault();
     const pos = getTouchPos(canvas, e);
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#111";
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
 });
